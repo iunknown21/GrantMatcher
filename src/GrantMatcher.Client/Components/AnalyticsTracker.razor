@@ -1,0 +1,75 @@
+@using GrantMatcher.Client.Services
+@inject IAnalyticsClient AnalyticsClient
+@inject NavigationManager Navigation
+@implements IDisposable
+
+@code {
+    private string? _currentPage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialize analytics session
+        await AnalyticsClient.InitializeAsync();
+
+        // Track initial page view
+        _currentPage = Navigation.Uri;
+        await TrackPageView();
+
+        // Subscribe to navigation changes
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private async void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        // End time tracking for previous page
+        if (!string.IsNullOrEmpty(_currentPage))
+        {
+            await AnalyticsClient.EndTimeTrackingAsync(_currentPage);
+        }
+
+        // Track new page view
+        _currentPage = e.Location;
+        await TrackPageView();
+    }
+
+    private async Task TrackPageView()
+    {
+        try
+        {
+            var uri = new Uri(_currentPage!);
+            var pageTitle = GetPageTitle(uri.AbsolutePath);
+            await AnalyticsClient.TrackPageViewAsync(_currentPage!, pageTitle);
+        }
+        catch
+        {
+            // Silently fail - analytics should never break the app
+        }
+    }
+
+    private string GetPageTitle(string path)
+    {
+        return path switch
+        {
+            "/" or "/index" => "Home",
+            "/conversation" => "Find Grants",
+            "/profile" => "My Profile",
+            "/search" => "Search Grants",
+            "/saved" => "Saved Grants",
+            "/admin" => "Admin Dashboard",
+            "/admin/analytics" => "Analytics Dashboard",
+            "/admin/Grants" => "Manage Grants",
+            _ => "GrantMatcher"
+        };
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+
+        // End time tracking for current page
+        if (!string.IsNullOrEmpty(_currentPage))
+        {
+            _ = AnalyticsClient.EndTimeTrackingAsync(_currentPage);
+        }
+    }
+}

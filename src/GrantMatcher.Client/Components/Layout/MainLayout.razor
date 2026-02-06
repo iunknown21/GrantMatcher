@@ -1,0 +1,164 @@
+@inherits LayoutComponentBase
+
+<div class="min-h-screen flex flex-col">
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <a href="/" class="text-2xl font-bold text-primary-600">
+                            GrantMatcher
+                        </a>
+                    </div>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <NavLink href="/" class="nav-link" Match="NavLinkMatch.All">
+                            Home
+                        </NavLink>
+                        <NavLink href="/dashboard" class="nav-link">
+                            Dashboard
+                        </NavLink>
+                        <NavLink href="/saved" class="nav-link">
+                            Saved
+                        </NavLink>
+                        @if (isAdmin)
+                        {
+                            <div class="relative admin-dropdown">
+                                <button @onclick="ToggleAdminMenu" class="nav-link flex items-center cursor-pointer">
+                                    Admin
+                                    <svg class="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </button>
+                                @if (showAdminMenu)
+                                {
+                                    <div class="absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                                        <div class="py-1">
+                                            <a href="/admin" class="admin-menu-item">
+                                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                                                </svg>
+                                                Dashboard
+                                            </a>
+                                            <a href="/admin/Grants" class="admin-menu-item">
+                                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                                </svg>
+                                                Manage Grants
+                                            </a>
+                                            <a href="/admin/Grants/add" class="admin-menu-item">
+                                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                                Add Grant
+                                            </a>
+                                            <a href="/admin/Grants/bulk-upload" class="admin-menu-item">
+                                                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                                </svg>
+                                                Bulk Upload
+                                            </a>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <a href="/profile" class="btn-primary">
+                        My Profile
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow">
+        @Body
+    </main>
+
+    <footer class="bg-gray-800 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">GrantMatcher</h3>
+                    <p class="text-gray-400 text-sm">
+                        Find Grants you actually qualify for using AI-powered matching.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="/about" class="hover:text-white">About Us</a></li>
+                        <li><a href="/how-it-works" class="hover:text-white">How It Works</a></li>
+                        <li><a href="/privacy" class="hover:text-white">Privacy Policy</a></li>
+                        <li><a href="/terms" class="hover:text-white">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Contact</h3>
+                    <p class="text-gray-400 text-sm">
+                        Questions? Email us at<br/>
+                        <a href="mailto:support@GrantMatcher.com" class="text-primary-400 hover:text-primary-300">
+                            support@GrantMatcher.com
+                        </a>
+                    </p>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-gray-700 text-center text-sm text-gray-400">
+                <p>&copy; 2026 GrantMatcher. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+
+@code {
+    private bool isAdmin = true; // TODO: Replace with actual authentication check
+    private bool showAdminMenu = false;
+
+    private void ToggleAdminMenu()
+    {
+        showAdminMenu = !showAdminMenu;
+    }
+}
+
+<style>
+    .nav-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 0 1rem;
+        border-bottom: 2px solid transparent;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: rgb(75 85 99);
+        transition: all 0.2s;
+    }
+
+    .nav-link:hover {
+        border-bottom-color: rgb(59 130 246);
+        color: rgb(17 24 39);
+    }
+
+    .nav-link.active {
+        border-bottom-color: rgb(59 130 246);
+        color: rgb(37 99 235);
+    }
+
+    .admin-dropdown {
+        position: relative;
+    }
+
+    .admin-menu-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        color: rgb(55 65 81);
+        transition: background-color 0.2s;
+    }
+
+    .admin-menu-item:hover {
+        background-color: rgb(243 244 246);
+        color: rgb(17 24 39);
+    }
+</style>

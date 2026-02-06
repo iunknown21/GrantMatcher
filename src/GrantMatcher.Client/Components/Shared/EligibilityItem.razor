@@ -1,0 +1,36 @@
+<div class="flex items-start p-3 @(IsMet ? "bg-green-50" : "bg-gray-50") rounded-lg">
+    <svg class="w-5 h-5 @(IsMet ? "text-green-600" : "text-gray-400") mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="@(IsMet ? "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" : "M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z")"></path>
+    </svg>
+    <div class="flex-1">
+        <div class="flex items-center justify-between">
+            <span class="font-medium @(IsMet ? "text-green-900" : "text-gray-900")">@Label</span>
+            @if (IsRequired)
+            {
+                <span class="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded-full">Required</span>
+            }
+        </div>
+        <div class="text-sm @(IsMet ? "text-green-700" : "text-gray-600") mt-1">@Requirement</div>
+        @if (!string.IsNullOrEmpty(NonprofitValue))
+        {
+            <div class="text-xs @(IsMet ? "text-green-600" : "text-amber-600") mt-1 italic">@NonprofitValue</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsRequired { get; set; }
+
+    [Parameter]
+    public bool IsMet { get; set; }
+
+    [Parameter]
+    public string Requirement { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? NonprofitValue { get; set; }
+}

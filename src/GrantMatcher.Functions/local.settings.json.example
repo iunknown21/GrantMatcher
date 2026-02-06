@@ -1,0 +1,26 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+
+    "CosmosDb:ConnectionString": "AccountEndpoint=https://your-account.documents.azure.com:443/;AccountKey=your-key;",
+    "CosmosDb:DatabaseName": "ScholarshipMatcher",
+
+    "EntityMatchingAI:ApiKey": "your-entity-matching-api-key",
+    "EntityMatchingAI:BaseUrl": "https://profilematching-apim.azure-api.net/api/v1",
+
+    "OpenAI:ApiKey": "your-openai-api-key",
+    "OpenAI:EmbeddingModel": "text-embedding-3-small",
+    "OpenAI:ChatModel": "gpt-4o-mini",
+
+    "Redis:ConnectionString": "localhost:6379",
+
+    "RateLimit:MaxRequestsPerMinute": 60,
+    "RateLimit:MaxRequestsPerHour": 1000
+  },
+  "Host": {
+    "CORS": "*",
+    "CORSCredentials": false
+  }
+}

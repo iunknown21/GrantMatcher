@@ -1,0 +1,57 @@
+name: Deploy Azure Functions
+
+on:
+  workflow_run:
+    workflows: ["CI - Build and Test"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '9.0.x'
+  AZURE_FUNCTIONAPP_NAME: 'scholarshipmatcher-dev-func'  # Set in Azure portal
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/ScholarshipMatcher.Functions'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    environment:
+      name: 'Development'
+      url: ${{ steps.deploy-to-functions.outputs.webapp-url }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Resolve Project Dependencies
+      working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+      run: |
+        dotnet restore
+        dotnet build --configuration Release --no-restore
+
+    - name: Publish Functions
+      working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+      run: dotnet publish --configuration Release --output ./output
+
+    - name: Deploy to Azure Functions
+      id: deploy-to-functions
+      uses: Azure/functions-action@v1
+      with:
+        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output
+        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+
+    - name: Seed Scholarships
+      if: github.event_name == 'workflow_dispatch'
+      run: |
+        echo "Calling seed endpoint..."
+        curl -X POST \
+          https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/admin/scholarships/seed \
+          -H "x-functions-key: ${{ secrets.FUNCTION_APP_KEY }}"

@@ -1,0 +1,87 @@
+@using GrantMatcher.Shared.Models
+
+<div>
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Organization Information</h2>
+    <p class="text-gray-600 mb-6">Tell us about your nonprofit organization.</p>
+
+    <div class="space-y-4">
+        <div>
+            <label class="label">Organization Name *</label>
+            <InputText @bind-Value="Profile.OrganizationName" class="input" placeholder="Community Education Foundation" />
+            <ValidationMessage For="@(() => Profile.OrganizationName)" class="text-red-600 text-sm mt-1" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="label">EIN (Tax ID) *</label>
+                <InputText @bind-Value="Profile.EIN" class="input" placeholder="12-3456789" />
+                <ValidationMessage For="@(() => Profile.EIN)" class="text-red-600 text-sm mt-1" />
+                <p class="text-sm text-gray-500 mt-1">Federal Employer Identification Number</p>
+            </div>
+
+            <div>
+                <label class="label">Email Address *</label>
+                <InputText type="email" @bind-Value="Profile.Email" class="input" placeholder="contact@foundation.org" />
+                <ValidationMessage For="@(() => Profile.Email)" class="text-red-600 text-sm mt-1" />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="label">State *</label>
+                <InputSelect @bind-Value="Profile.State" class="input">
+                    <option value="">Select state</option>
+                    @foreach (var state in UsStates)
+                    {
+                        <option value="@state">@state</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => Profile.State)" class="text-red-600 text-sm mt-1" />
+            </div>
+
+            <div>
+                <label class="label">City *</label>
+                <InputText @bind-Value="Profile.City" class="input" placeholder="San Francisco" />
+                <ValidationMessage For="@(() => Profile.City)" class="text-red-600 text-sm mt-1" />
+            </div>
+
+            <div>
+                <label class="label">Zip Code *</label>
+                <InputText @bind-Value="Profile.ZipCode" class="input" placeholder="94102" />
+                <ValidationMessage For="@(() => Profile.ZipCode)" class="text-red-600 text-sm mt-1" />
+            </div>
+        </div>
+
+        <div>
+            <label class="label">Organization Type *</label>
+            <InputSelect @bind-Value="Profile.OrganizationType" class="input">
+                <option value="">Select organization type</option>
+                <option value="501(c)(3)">501(c)(3) Nonprofit</option>
+                <option value="Educational">Educational Institution</option>
+                <option value="Tribal">Tribal Organization</option>
+                <option value="Government">State/Local Government</option>
+                <option value="Faith-Based">Faith-Based Organization</option>
+                <option value="Community">Community Organization</option>
+                <option value="Other">Other</option>
+            </InputSelect>
+            <ValidationMessage For="@(() => Profile.OrganizationType)" class="text-red-600 text-sm mt-1" />
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public NonprofitProfile Profile { get; set; } = new();
+
+    private static readonly string[] UsStates = new[]
+    {
+        "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+        "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
+        "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
+        "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
+        "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+        "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+        "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
+        "Wisconsin", "Wyoming", "District of Columbia"
+    };
+}

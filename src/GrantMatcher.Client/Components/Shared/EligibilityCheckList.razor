@@ -1,0 +1,102 @@
+@using GrantMatcher.Shared.Models
+
+<div class="space-y-3">
+    @if (Grant.ApplicantTypes?.Any() == true)
+    {
+        <EligibilityItem
+            Label="Eligible Applicant Types"
+            IsRequired="true"
+            IsMet="CheckApplicantType()"
+            Requirement="@($"Must be: {string.Join(", ", Grant.ApplicantTypes)}")"
+            NonprofitValue="@(NonprofitProfile != null ? $"Your type: {NonprofitProfile.OrganizationType}" : null)" />
+    }
+
+    @if (Grant.EligibleStates?.Any() == true)
+    {
+        <EligibilityItem
+            Label="Geographic Eligibility"
+            IsRequired="true"
+            IsMet="CheckState()"
+            Requirement="@($"Must be located in: {string.Join(", ", Grant.EligibleStates)}")"
+            NonprofitValue="@(NonprofitProfile != null ? $"Your state: {NonprofitProfile.State}" : null)" />
+    }
+
+    @if (Grant.FundingCategories?.Any() == true)
+    {
+        <EligibilityItem
+            Label="Funding Categories"
+            IsRequired="false"
+            IsMet="CheckFundingCategories()"
+            Requirement="@($"Grant supports: {string.Join(", ", Grant.FundingCategories)}")"
+            NonprofitValue="@(NonprofitProfile != null && NonprofitProfile.FundingCategories?.Any() == true ? $"Your focus: {string.Join(", ", NonprofitProfile.FundingCategories)}" : null)" />
+    }
+
+    @if (Grant.AwardFloor.HasValue)
+    {
+        <EligibilityItem
+            Label="Minimum Award"
+            IsRequired="false"
+            IsMet="true"
+            Requirement="@($"Minimum award: {Grant.AwardFloor.Value:C0}")"
+            NonprofitValue="@(NonprofitProfile != null ? $"Your typical project budget: {NonprofitProfile.TypicalProjectBudget:C0}" : null)" />
+    }
+
+    @if (!Grant.ApplicantTypes?.Any() == true && !Grant.EligibleStates?.Any() == true &&
+         !Grant.FundingCategories?.Any() == true)
+    {
+        <div class="flex items-center text-green-700 p-4 bg-green-50 rounded-lg">
+            <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <div>
+                <div class="font-semibold">Open to All Eligible Applicants</div>
+                <div class="text-sm">This grant has broad eligibility requirements</div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public GrantEntity Grant { get; set; } = null!;
+
+    [Parameter]
+    public NonprofitProfile? NonprofitProfile { get; set; }
+
+    private bool CheckApplicantType()
+    {
+        if (NonprofitProfile == null || string.IsNullOrEmpty(NonprofitProfile.OrganizationType))
+            return false;
+
+        if (Grant.ApplicantTypes == null || !Grant.ApplicantTypes.Any())
+            return true;
+
+        return Grant.ApplicantTypes.Contains(NonprofitProfile.OrganizationType, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private bool CheckState()
+    {
+        if (NonprofitProfile == null || string.IsNullOrEmpty(NonprofitProfile.State))
+            return false;
+
+        if (Grant.EligibleStates == null || !Grant.EligibleStates.Any())
+            return true;
+
+        return Grant.EligibleStates.Contains(NonprofitProfile.State, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private bool CheckFundingCategories()
+    {
+        if (NonprofitProfile == null || NonprofitProfile.FundingCategories == null || !NonprofitProfile.FundingCategories.Any())
+            return false;
+
+        if (Grant.FundingCategories == null || !Grant.FundingCategories.Any())
+            return true;
+
+        // Check if there's any overlap between nonprofit's focus areas and grant's funding categories
+        return NonprofitProfile.FundingCategories
+            .Any(nonprofitCategory => Grant.FundingCategories
+                .Any(grantCategory => grantCategory.Contains(nonprofitCategory, StringComparison.OrdinalIgnoreCase) ||
+                                     nonprofitCategory.Contains(grantCategory, StringComparison.OrdinalIgnoreCase)));
+    }
+}

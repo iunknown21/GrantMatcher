@@ -1,0 +1,196 @@
+@using GrantMatcher.Shared.Models
+
+<div class="card hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border border-transparent hover:border-primary-200">
+    <div class="flex items-start justify-between">
+        <div class="flex-1">
+            <div class="flex items-start justify-between mb-2">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900 hover:text-primary-600">
+                        <a href="@($"/Grant/{Match.GrantId}")">
+                            @Match.Grant.Name
+                        </a>
+                    </h3>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded font-medium">@Match.Grant.Agency</span>
+                        @if (!string.IsNullOrEmpty(Match.Grant.OpportunityNumber))
+                        {
+                            <span class="text-xs text-gray-600">@Match.Grant.OpportunityNumber</span>
+                        }
+                    </div>
+                </div>
+                <MatchScoreBadge Score="@((int)(Match.SemanticSimilarity * 100))" />
+            </div>
+
+            <p class="text-sm text-gray-700 mb-4 line-clamp-2">
+                @Match.Grant.Description
+            </p>
+
+            <div class="flex flex-wrap gap-4 mb-4 text-sm">
+                <!-- Award Range -->
+                <div class="flex items-center text-green-700">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-semibold">@GetAwardRangeText()</span>
+                </div>
+
+                <!-- Deadline -->
+                @if (Match.Grant.CloseDate.HasValue)
+                {
+                    <div class="flex items-center @GetDeadlineClass()">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        <span>@GetDeadlineText()</span>
+                    </div>
+                }
+
+                <!-- Expected Awards -->
+                @if (Match.Grant.ExpectedNumberOfAwards.HasValue)
+                {
+                    <div class="flex items-center text-purple-700">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0"></path>
+                        </svg>
+                        <span>~@Match.Grant.ExpectedNumberOfAwards.Value awards</span>
+                    </div>
+                }
+            </div>
+
+            <!-- Funding Categories & Applicant Types -->
+            <div class="flex flex-wrap gap-2 mb-4">
+                @foreach (var category in Match.Grant.FundingCategories.Take(3))
+                {
+                    <span class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">@category</span>
+                }
+                @foreach (var appType in Match.Grant.ApplicantTypes.Take(2))
+                {
+                    <span class="text-xs px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full">@appType</span>
+                }
+                @if (!string.IsNullOrEmpty(Match.Grant.FundingInstrument))
+                {
+                    <span class="text-xs px-2 py-1 bg-gray-100 text-gray-800 rounded-full">@Match.Grant.FundingInstrument</span>
+                }
+            </div>
+
+            <!-- Eligibility Status -->
+            @if (Match.MeetsAllRequirements)
+            {
+                <div class="flex items-center text-green-700 text-sm mb-3">
+                    <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="font-medium">Your organization meets all requirements</span>
+                </div>
+            }
+            else if (Match.UnmetRequirements.Any())
+            {
+                <div class="mb-3">
+                    <button @onclick="ToggleRequirements" class="flex items-center text-sm text-amber-700 hover:text-amber-800">
+                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                        <span>@Match.UnmetRequirements.Count potential concern@(Match.UnmetRequirements.Count > 1 ? "s" : "")</span>
+                        <svg class="w-4 h-4 ml-1 transform @(showRequirements ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+
+                    @if (showRequirements)
+                    {
+                        <ul class="mt-2 text-sm text-amber-700 space-y-1 ml-6 list-disc">
+                            @foreach (var requirement in Match.UnmetRequirements)
+                            {
+                                <li>@requirement</li>
+                            }
+                        </ul>
+                    }
+                </div>
+            }
+
+            <!-- Actions -->
+            <div class="flex gap-3">
+                <a href="@($"/Grant/{Match.GrantId}")" class="btn-primary flex-1 text-center">
+                    View Details
+                </a>
+                <button @onclick="() => OnSave.InvokeAsync(Match.GrantId)"
+                        class="btn-secondary px-4">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public MatchResult Match { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<Guid> OnSave { get; set; }
+
+    private bool showRequirements = false;
+
+    private void ToggleRequirements()
+    {
+        showRequirements = !showRequirements;
+    }
+
+    private string GetAwardRangeText()
+    {
+        if (Match.Grant.AwardFloor.HasValue && Match.Grant.AwardCeiling.HasValue)
+        {
+            return $"{Match.Grant.AwardFloor.Value:C0} - {Match.Grant.AwardCeiling.Value:C0}";
+        }
+        else if (Match.Grant.AwardCeiling.HasValue)
+        {
+            return $"Up to {Match.Grant.AwardCeiling.Value:C0}";
+        }
+        else if (Match.Grant.AwardFloor.HasValue)
+        {
+            return $"From {Match.Grant.AwardFloor.Value:C0}";
+        }
+        else if (Match.Grant.EstimatedTotalFunding.HasValue)
+        {
+            return $"~{Match.Grant.EstimatedTotalFunding.Value:C0} total";
+        }
+        return "Amount varies";
+    }
+
+    private string GetDeadlineClass()
+    {
+        if (!Match.Grant.CloseDate.HasValue)
+            return "text-gray-700";
+
+        var daysUntil = (Match.Grant.CloseDate.Value - DateTime.UtcNow).TotalDays;
+        if (daysUntil < 7)
+            return "text-red-700";
+        else if (daysUntil < 30)
+            return "text-orange-700";
+        else
+            return "text-gray-700";
+    }
+
+    private string GetDeadlineText()
+    {
+        if (!Match.Grant.CloseDate.HasValue)
+            return "No deadline specified";
+
+        var daysUntil = (int)(Match.Grant.CloseDate.Value - DateTime.UtcNow).TotalDays;
+
+        if (daysUntil < 0)
+            return "Deadline passed";
+        else if (daysUntil == 0)
+            return "Due today!";
+        else if (daysUntil == 1)
+            return "Due tomorrow";
+        else if (daysUntil < 7)
+            return $"Due in {daysUntil} days";
+        else if (daysUntil < 30)
+            return $"Due in {daysUntil / 7} weeks";
+        else
+            return Match.Grant.CloseDate.Value.ToString("MMM dd, yyyy");
+    }
+}

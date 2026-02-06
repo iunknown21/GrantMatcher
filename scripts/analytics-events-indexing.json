@@ -1,0 +1,56 @@
+{
+  "indexingMode": "consistent",
+  "automatic": true,
+  "includedPaths": [
+    {
+      "path": "/*"
+    }
+  ],
+  "excludedPaths": [
+    {
+      "path": "/\"_etag\"/?"
+    }
+  ],
+  "compositeIndexes": [
+    [
+      {
+        "path": "/eventType",
+        "order": "ascending"
+      },
+      {
+        "path": "/timestamp",
+        "order": "descending"
+      }
+    ],
+    [
+      {
+        "path": "/eventCategory",
+        "order": "ascending"
+      },
+      {
+        "path": "/timestamp",
+        "order": "descending"
+      }
+    ],
+    [
+      {
+        "path": "/userId",
+        "order": "ascending"
+      },
+      {
+        "path": "/timestamp",
+        "order": "descending"
+      }
+    ],
+    [
+      {
+        "path": "/sessionId",
+        "order": "ascending"
+      },
+      {
+        "path": "/timestamp",
+        "order": "descending"
+      }
+    ]
+  ]
+}

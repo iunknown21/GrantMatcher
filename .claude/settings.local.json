@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet new:*)",
+      "Bash(dotnet sln add:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet build:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run css:build:*)",
+      "Bash(git config:*)",
+      "Bash(gh:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(az:*)",
+      "Bash(git push:*)",
+      "Bash(dotnet test:*)",
+      "Bash(curl:*)",
+      "WebSearch",
+      "WebFetch(domain:api.careeronestop.org)",
+      "Bash(xcopy:*)",
+      "Bash(powershell:*)"
+    ]
+  }
+}

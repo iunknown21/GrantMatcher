@@ -1,0 +1,252 @@
+{
+  "description": "Cosmos DB Optimization Configuration for GrantMatcher",
+  "containers": {
+    "Nonprofits": {
+      "partitionKey": {
+        "path": "/id",
+        "kind": "Hash",
+        "version": 2,
+        "recommendation": "Use /id for even distribution. Each Nonprofit is independent."
+      },
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "automatic": true,
+        "includedPaths": [
+          {
+            "path": "/*"
+          }
+        ],
+        "excludedPaths": [
+          {
+            "path": "/profileSummary/*",
+            "reason": "Large text field, not queried directly"
+          },
+          {
+            "path": "/embedding/*",
+            "reason": "Vector data, queried via EntityMatchingAPI"
+          },
+          {
+            "path": "/_etag/?",
+            "reason": "System field"
+          }
+        ],
+        "compositeIndexes": [
+          [
+            {
+              "path": "/gpa",
+              "order": "descending"
+            },
+            {
+              "path": "/graduationYear",
+              "order": "ascending"
+            }
+          ]
+        ],
+        "spatialIndexes": []
+      },
+      "throughput": {
+        "mode": "autoscale",
+        "maxRU": 4000,
+        "recommendation": "Start with 400-1000 RU/s manual, upgrade to autoscale if needed"
+      }
+    },
+    "Grants": {
+      "partitionKey": {
+        "path": "/provider",
+        "kind": "Hash",
+        "version": 2,
+        "recommendation": "Use /provider for logical grouping. Alternative: /category if more providers"
+      },
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "automatic": true,
+        "includedPaths": [
+          {
+            "path": "/*"
+          }
+        ],
+        "excludedPaths": [
+          {
+            "path": "/description/*",
+            "reason": "Large text field"
+          },
+          {
+            "path": "/naturalLanguageSummary/*",
+            "reason": "Large text field"
+          },
+          {
+            "path": "/embedding/*",
+            "reason": "Vector data"
+          },
+          {
+            "path": "/_etag/?"
+          }
+        ],
+        "compositeIndexes": [
+          [
+            {
+              "path": "/deadline",
+              "order": "ascending"
+            },
+            {
+              "path": "/awardAmount",
+              "order": "descending"
+            }
+          ],
+          [
+            {
+              "path": "/minGpa",
+              "order": "ascending"
+            },
+            {
+              "path": "/maxGpa",
+              "order": "descending"
+            }
+          ]
+        ],
+        "spatialIndexes": []
+      },
+      "throughput": {
+        "mode": "autoscale",
+        "maxRU": 4000,
+        "recommendation": "Heavy read workload - consider autoscale or higher RU/s"
+      }
+    },
+    "matches": {
+      "partitionKey": {
+        "path": "/NonprofitId",
+        "kind": "Hash",
+        "version": 2,
+        "recommendation": "Use /NonprofitId to co-locate all matches for a Nonprofit"
+      },
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "automatic": true,
+        "includedPaths": [
+          {
+            "path": "/*"
+          }
+        ],
+        "excludedPaths": [
+          {
+            "path": "/Grant/*",
+            "reason": "Embedded object, not queried directly"
+          },
+          {
+            "path": "/_etag/?"
+          }
+        ],
+        "compositeIndexes": [
+          [
+            {
+              "path": "/NonprofitId",
+              "order": "ascending"
+            },
+            {
+              "path": "/compositeScore",
+              "order": "descending"
+            }
+          ],
+          [
+            {
+              "path": "/NonprofitId",
+              "order": "ascending"
+            },
+            {
+              "path": "/matchedAt",
+              "order": "descending"
+            }
+          ]
+        ],
+        "spatialIndexes": []
+      },
+      "throughput": {
+        "mode": "manual",
+        "RU": 400,
+        "recommendation": "Lower throughput OK - results are cached"
+      },
+      "ttl": {
+        "enabled": true,
+        "defaultTTL": 2592000,
+        "description": "30 days - matches are regenerated periodically"
+      }
+    },
+    "saved-Grants": {
+      "partitionKey": {
+        "path": "/NonprofitId",
+        "kind": "Hash",
+        "version": 2,
+        "recommendation": "Use /NonprofitId to co-locate all saved Grants for a Nonprofit"
+      },
+      "indexingPolicy": {
+        "indexingMode": "consistent",
+        "automatic": true,
+        "includedPaths": [
+          {
+            "path": "/*"
+          }
+        ],
+        "excludedPaths": [
+          {
+            "path": "/_etag/?"
+          }
+        ],
+        "compositeIndexes": [
+          [
+            {
+              "path": "/NonprofitId",
+              "order": "ascending"
+            },
+            {
+              "path": "/savedAt",
+              "order": "descending"
+            }
+          ],
+          [
+            {
+              "path": "/NonprofitId",
+              "order": "ascending"
+            },
+            {
+              "path": "/status",
+              "order": "ascending"
+            }
+          ]
+        ],
+        "spatialIndexes": []
+      },
+      "throughput": {
+        "mode": "manual",
+        "RU": 400,
+        "recommendation": "Low volume - manual throughput is cost-effective"
+      }
+    }
+  },
+  "queryOptimizations": {
+    "recommendations": [
+      "Always include partition key in queries when possible",
+      "Use OFFSET/LIMIT for pagination instead of continuation tokens for better caching",
+      "Avoid SELECT * - only select needed fields",
+      "Use ORDER BY with composite indexes defined above",
+      "Enable query metrics to identify expensive queries",
+      "Consider using change feed for real-time updates instead of polling"
+    ],
+    "examples": {
+      "efficientNonprofitQuery": "SELECT c.id, c.firstName, c.lastName, c.email FROM c WHERE c.id = @NonprofitId",
+      "efficientGrantQuery": "SELECT c.id, c.name, c.awardAmount, c.deadline FROM c WHERE c.provider = @provider AND c.deadline > @currentDate ORDER BY c.deadline ASC",
+      "efficientMatchesQuery": "SELECT c.GrantId, c.compositeScore, c.matchedAt FROM c WHERE c.NonprofitId = @NonprofitId ORDER BY c.compositeScore DESC OFFSET 0 LIMIT 20"
+    }
+  },
+  "performanceMetrics": {
+    "targetRUPerQuery": {
+      "simple": "< 10 RU",
+      "complex": "< 50 RU",
+      "withVector": "< 100 RU"
+    },
+    "targetLatency": {
+      "singleDocument": "< 10ms",
+      "smallQuery": "< 50ms",
+      "largeQuery": "< 200ms"
+    }
+  }
+}

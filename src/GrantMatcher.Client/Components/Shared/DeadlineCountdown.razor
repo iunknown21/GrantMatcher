@@ -1,0 +1,66 @@
+@implements IDisposable
+
+<div class="text-xs @GetColorClass() mt-1">
+    @GetCountdownText()
+</div>
+
+@code {
+    [Parameter]
+    public DateTime Deadline { get; set; }
+
+    private System.Threading.Timer? _timer;
+    private TimeSpan timeRemaining;
+
+    protected override void OnInitialized()
+    {
+        UpdateTimeRemaining();
+
+        // Update every minute
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            UpdateTimeRemaining();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+    }
+
+    private void UpdateTimeRemaining()
+    {
+        timeRemaining = Deadline - DateTime.UtcNow;
+    }
+
+    private string GetCountdownText()
+    {
+        if (timeRemaining.TotalDays < 0)
+            return "Deadline has passed";
+
+        if (timeRemaining.TotalDays < 1)
+            return $"{(int)timeRemaining.TotalHours} hours remaining";
+
+        if (timeRemaining.TotalDays < 7)
+            return $"{(int)timeRemaining.TotalDays} days remaining";
+
+        if (timeRemaining.TotalDays < 30)
+            return $"{(int)(timeRemaining.TotalDays / 7)} weeks remaining";
+
+        return $"{(int)(timeRemaining.TotalDays / 30)} months remaining";
+    }
+
+    private string GetColorClass()
+    {
+        if (timeRemaining.TotalDays < 0)
+            return "text-red-600 font-semibold";
+
+        if (timeRemaining.TotalDays < 7)
+            return "text-red-600 font-semibold";
+
+        if (timeRemaining.TotalDays < 30)
+            return "text-orange-600 font-medium";
+
+        return "text-blue-600";
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+}

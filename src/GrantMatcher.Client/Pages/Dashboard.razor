@@ -1,0 +1,280 @@
+@page "/dashboard"
+@inject IApiClient ApiClient
+@inject NavigationManager Navigation
+
+<div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-gray-900">Your Grant Matches</h1>
+            <p class="text-gray-600 mt-2">
+                @if (matches != null && matches.Any())
+                {
+                    <span>Found <strong>@matches.Count</strong> Grants you qualify for</span>
+                }
+                else if (isLoading)
+                {
+                    <span>Finding Grants that match your profile...</span>
+                }
+                else
+                {
+                    <span>Start by creating your profile to find matching Grants</span>
+                }
+            </p>
+        </div>
+
+        @if (showProfileCreatedMessage)
+        {
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start">
+                <svg class="w-6 h-6 text-green-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                    <h3 class="font-semibold text-green-900">Profile Created Successfully!</h3>
+                    <p class="text-sm text-green-700 mt-1">We're finding Grants that match your unique profile.</p>
+                </div>
+            </div>
+        }
+
+        <div class="lg:grid lg:grid-cols-4 lg:gap-8">
+            <!-- Filters Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="card sticky top-4">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
+
+                    <div class="space-y-4">
+                        <!-- Award Amount -->
+                        <div>
+                            <label class="label">Award Amount</label>
+                            <select @bind="filterAwardAmount" @bind:after="ApplyFilters" class="input">
+                                <option value="">Any amount</option>
+                                <option value="500">$500+</option>
+                                <option value="1000">$1,000+</option>
+                                <option value="2500">$2,500+</option>
+                                <option value="5000">$5,000+</option>
+                                <option value="10000">$10,000+</option>
+                            </select>
+                        </div>
+
+                        <!-- Deadline -->
+                        <div>
+                            <label class="label">Deadline</label>
+                            <select @bind="filterDeadline" @bind:after="ApplyFilters" class="input">
+                                <option value="">Any time</option>
+                                <option value="7">Next 7 days</option>
+                                <option value="30">Next 30 days</option>
+                                <option value="60">Next 60 days</option>
+                                <option value="90">Next 90 days</option>
+                            </select>
+                        </div>
+
+                        <!-- Sort By -->
+                        <div>
+                            <label class="label">Sort By</label>
+                            <select @bind="sortBy" @bind:after="ApplyFilters" class="input">
+                                <option value="match">Best Match</option>
+                                <option value="amount">Award Amount</option>
+                                <option value="deadline">Deadline (Soonest)</option>
+                            </select>
+                        </div>
+
+                        <!-- Reset Filters -->
+                        @if (HasActiveFilters())
+                        {
+                            <button @onclick="ResetFilters" class="btn-secondary w-full text-sm">
+                                Reset Filters
+                            </button>
+                        }
+                    </div>
+
+                    <!-- Profile Strength -->
+                    <div class="mt-6 pt-6 border-t">
+                        <h3 class="text-sm font-semibold text-gray-900 mb-2">Profile Strength</h3>
+                        <div class="bg-gray-200 rounded-full h-2 mb-2">
+                            <div class="bg-primary-600 h-2 rounded-full" style="width: 85%"></div>
+                        </div>
+                        <p class="text-xs text-gray-600">85% Complete - Add more activities to improve matches</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grant Grid -->
+            <div class="lg:col-span-3 mt-6 lg:mt-0">
+                @if (isLoading)
+                {
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4"></div>
+                        <p class="text-gray-600">Analyzing your profile and finding matches...</p>
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="card bg-red-50 border border-red-200">
+                        <div class="flex items-start">
+                            <svg class="w-6 h-6 text-red-600 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <div>
+                                <h3 class="font-semibold text-red-900">Error Loading Matches</h3>
+                                <p class="text-sm text-red-700 mt-1">@errorMessage</p>
+                                <button @onclick="LoadMatches" class="btn-primary mt-3">Try Again</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (filteredMatches == null || !filteredMatches.Any())
+                {
+                    <div class="card text-center py-12">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <h3 class="mt-2 text-lg font-medium text-gray-900">No Grants Found</h3>
+                        <p class="mt-1 text-gray-500">
+                            @if (HasActiveFilters())
+                            {
+                                <span>Try adjusting your filters to see more results.</span>
+                            }
+                            else
+                            {
+                                <span>Create your profile to start finding Grants!</span>
+                            }
+                        </p>
+                        @if (!HasActiveFilters())
+                        {
+                            <a href="/profile/wizard" class="btn-primary mt-4 inline-block">Create Profile</a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="space-y-4">
+                        @foreach (var match in filteredMatches)
+                        {
+                            <GrantCard Match="match" OnSave="HandleSaveGrant" />
+                        }
+                    </div>
+
+                    <!-- Load More (Future enhancement) -->
+                    @if (filteredMatches.Count >= 20)
+                    {
+                        <div class="text-center mt-8">
+                            <button class="btn-secondary">Load More Grants</button>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<MatchResult>? matches;
+    private List<MatchResult>? filteredMatches;
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+    private bool showProfileCreatedMessage = false;
+
+    // Filters
+    private string filterAwardAmount = "";
+    private string filterDeadline = "";
+    private string sortBy = "match";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Check for profile created query param
+        var uri = new Uri(Navigation.Uri);
+        showProfileCreatedMessage = uri.Query.Contains("profileCreated=true");
+
+        await LoadMatches();
+    }
+
+    private async Task LoadMatches()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = string.Empty;
+
+            // TODO: Get actual Nonprofit ID from auth context
+            var NonprofitId = Guid.NewGuid(); // Placeholder
+
+            var searchRequest = new SearchRequest
+            {
+                NonprofitId = NonprofitId,
+                Limit = 20,
+                MinSimilarity = 0.6
+            };
+
+            var response = await ApiClient.SearchGrantsAsync(searchRequest);
+            matches = response.Matches;
+            filteredMatches = matches;
+
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        if (matches == null)
+            return;
+
+        var filtered = matches.AsEnumerable();
+
+        // Award amount filter
+        if (!string.IsNullOrEmpty(filterAwardAmount))
+        {
+            var minAmount = decimal.Parse(filterAwardAmount);
+            filtered = filtered.Where(m => (m.Grant.AwardCeiling ?? m.Grant.AwardFloor ?? 0) >= minAmount);
+        }
+
+        // Deadline filter
+        if (!string.IsNullOrEmpty(filterDeadline))
+        {
+            var days = int.Parse(filterDeadline);
+            var maxDeadline = DateTime.UtcNow.AddDays(days);
+            filtered = filtered.Where(m => m.Grant.CloseDate.HasValue && m.Grant.CloseDate.Value <= maxDeadline);
+        }
+
+        // Grants don't have essay/recommendation filters - removed
+
+        // Sort
+        filtered = sortBy switch
+        {
+            "amount" => filtered.OrderByDescending(m => m.Grant.AwardCeiling ?? m.Grant.AwardFloor ?? 0),
+            "deadline" => filtered.OrderBy(m => m.Grant.CloseDate ?? DateTime.MaxValue),
+            _ => filtered.OrderByDescending(m => m.CompositeScore)
+        };
+
+        filteredMatches = filtered.ToList();
+    }
+
+    private void ResetFilters()
+    {
+        filterAwardAmount = "";
+        filterDeadline = "";
+        sortBy = "match";
+        ApplyFilters();
+    }
+
+    private bool HasActiveFilters()
+    {
+        return !string.IsNullOrEmpty(filterAwardAmount) ||
+               !string.IsNullOrEmpty(filterDeadline) ||
+               sortBy != "match";
+    }
+
+    private void HandleSaveGrant(Guid GrantId)
+    {
+        // TODO: Implement save functionality
+        Console.WriteLine($"Saving Grant {GrantId}");
+    }
+}

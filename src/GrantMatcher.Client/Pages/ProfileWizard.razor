@@ -1,0 +1,209 @@
+@page "/profile/wizard"
+@inject IApiClient ApiClient
+@inject NavigationManager Navigation
+
+<div class="min-h-screen bg-gray-50 py-12">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Progress Indicator -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                @for (int i = 1; i <= 5; i++)
+                {
+                    var stepNumber = i;
+                    var isActive = stepNumber == currentStep;
+                    var isCompleted = stepNumber < currentStep;
+
+                    <div class="flex items-center @(i < 5 ? "flex-1" : "")">
+                        <div class="flex flex-col items-center">
+                            <div class="@GetStepClass(stepNumber)">
+                                @if (isCompleted)
+                                {
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <span class="@(isActive ? "text-white" : "text-gray-500")">@stepNumber</span>
+                                }
+                            </div>
+                            <div class="text-xs mt-2 @(isActive ? "text-primary-600 font-semibold" : "text-gray-500")">
+                                @GetStepName(stepNumber)
+                            </div>
+                        </div>
+                        @if (i < 5)
+                        {
+                            <div class="flex-1 h-1 mx-2 @(isCompleted ? "bg-primary-600" : "bg-gray-300")"></div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Wizard Content -->
+        <div class="card">
+            <EditForm Model="profile" OnValidSubmit="HandleNext">
+                <DataAnnotationsValidator />
+
+                @if (currentStep == 1)
+                {
+                    <StepBasicInfo Profile="profile" />
+                }
+                else if (currentStep == 2)
+                {
+                    <StepAcademic Profile="profile" />
+                }
+                else if (currentStep == 3)
+                {
+                    <StepDemographics Profile="profile" />
+                }
+                else if (currentStep == 4)
+                {
+                    <StepActivities Profile="profile" />
+                }
+                else if (currentStep == 5)
+                {
+                    <StepReview Profile="profile" />
+                }
+
+                <!-- Navigation Buttons -->
+                <div class="mt-8 flex justify-between">
+                    @if (currentStep > 1)
+                    {
+                        <button type="button" @onclick="HandlePrevious" class="btn-secondary">
+                            <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                            </svg>
+                            Previous
+                        </button>
+                    }
+                    else
+                    {
+                        <div></div>
+                    }
+
+                    <div class="flex gap-3">
+                        <button type="button" @onclick="SaveAndExit" class="btn-secondary">
+                            Save & Exit
+                        </button>
+
+                        @if (currentStep < 5)
+                        {
+                            <button type="submit" class="btn-primary">
+                                Next
+                                <svg class="w-5 h-5 ml-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="button" @onclick="SubmitProfile" class="btn-accent" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <span>Creating Profile...</span>
+                                }
+                                else
+                                {
+                                    <span>Create Profile</span>
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                        @errorMessage
+                    </div>
+                }
+            </EditForm>
+        </div>
+
+        <!-- Help Text -->
+        <div class="mt-6 text-center text-sm text-gray-500">
+            <p>Your information is secure and will only be used to match you with relevant Grants.</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private NonprofitProfile profile = new()
+    {
+        UserId = "temp-user-" + Guid.NewGuid().ToString("N")[..8], // TODO: Replace with actual auth
+        CreatedAt = DateTime.UtcNow,
+        LastModified = DateTime.UtcNow
+    };
+
+    private int currentStep = 1;
+    private bool isSubmitting = false;
+    private string errorMessage = string.Empty;
+
+    private string GetStepClass(int step)
+    {
+        var baseClass = "w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-colors";
+
+        if (step < currentStep)
+            return $"{baseClass} bg-primary-600";
+        else if (step == currentStep)
+            return $"{baseClass} bg-primary-600";
+        else
+            return $"{baseClass} bg-gray-300";
+    }
+
+    private string GetStepName(int step) => step switch
+    {
+        1 => "Basic Info",
+        2 => "Academic",
+        3 => "Demographics",
+        4 => "Activities",
+        5 => "Review",
+        _ => ""
+    };
+
+    private void HandleNext()
+    {
+        if (currentStep < 5)
+        {
+            currentStep++;
+        }
+    }
+
+    private void HandlePrevious()
+    {
+        if (currentStep > 1)
+        {
+            currentStep--;
+        }
+    }
+
+    private void SaveAndExit()
+    {
+        // TODO: Save draft to local storage or database
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task SubmitProfile()
+    {
+        try
+        {
+            isSubmitting = true;
+            errorMessage = string.Empty;
+
+            // Create profile via API
+            var createdProfile = await ApiClient.CreateProfileAsync(profile);
+
+            // Navigate to dashboard with success message
+            Navigation.NavigateTo($"/dashboard?profileCreated=true");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to create profile: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}
