@@ -9,9 +9,9 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSION: '9.0.x'
-  AZURE_FUNCTIONAPP_NAME: 'scholarshipmatcher-dev-func'  # Set in Azure portal
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/ScholarshipMatcher.Functions'
+  DOTNET_VERSION: '8.0.x'
+  AZURE_FUNCTIONAPP_NAME: 'func-grantmatcher-dev'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: './src/GrantMatcher.Functions'
 
 jobs:
   deploy:
@@ -48,10 +48,10 @@ jobs:
         package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output
         publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
 
-    - name: Seed Scholarships
+    - name: Seed Grants
       if: github.event_name == 'workflow_dispatch'
       run: |
         echo "Calling seed endpoint..."
         curl -X POST \
-          https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/admin/scholarships/seed \
+          https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/admin/grants/seed \
           -H "x-functions-key: ${{ secrets.FUNCTION_APP_KEY }}"

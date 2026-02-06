@@ -7,7 +7,7 @@ on:
     branches: [ main, develop ]
 
 env:
-  DOTNET_VERSION: '9.0.x'
+  DOTNET_VERSION: '8.0.x'
   NODE_VERSION: '20.x'
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
         cache: 'npm'
-        cache-dependency-path: src/ScholarshipMatcher.Client/package-lock.json
+        cache-dependency-path: src/GrantMatcher.Client/package-lock.json
 
     - name: Restore .NET dependencies
       run: dotnet restore
@@ -37,11 +37,11 @@ jobs:
       run: dotnet build --configuration Release --no-restore
 
     - name: Install npm dependencies
-      working-directory: src/ScholarshipMatcher.Client
+      working-directory: src/GrantMatcher.Client
       run: npm ci
 
     - name: Build Tailwind CSS
-      working-directory: src/ScholarshipMatcher.Client
+      working-directory: src/GrantMatcher.Client
       run: npm run css:build
 
     # Uncomment when tests are added
@@ -51,10 +51,10 @@ jobs:
     - name: Publish artifacts
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: |
-        dotnet publish src/ScholarshipMatcher.Functions/ScholarshipMatcher.Functions.csproj \
+        dotnet publish src/GrantMatcher.Functions/GrantMatcher.Functions.csproj \
           --configuration Release \
           --output ./publish/functions
-        dotnet publish src/ScholarshipMatcher.Client/ScholarshipMatcher.Client.csproj \
+        dotnet publish src/GrantMatcher.Client/GrantMatcher.Client.csproj \
           --configuration Release \
           --output ./publish/client
 
