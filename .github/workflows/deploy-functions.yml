@@ -30,29 +30,46 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Install Azure Functions Core Tools
-      run: |
-        curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-        sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
-        sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
-        sudo apt-get update
-        sudo apt-get install -y azure-functions-core-tools-4
-
-    - name: Build and Deploy to Azure Functions
+    - name: Build and Publish
       working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
       run: |
-        # Save publish profile to file
-        echo '${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}' > publish-profile.xml
+        dotnet restore
+        dotnet build --configuration Release --no-restore
+        dotnet publish --configuration Release --output ./publish
 
-        # Deploy using func CLI
-        func azure functionapp publish ${{ env.AZURE_FUNCTIONAPP_NAME }} \
-          --publish-profile-path publish-profile.xml
+    - name: Extract Publish Profile Credentials
+      id: extract-creds
+      run: |
+        # Extract username and password from publish profile
+        USERNAME=$(echo '${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}' | grep -oP '(?<=userName=")[^"]*' | head -1)
+        PASSWORD=$(echo '${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}' | grep -oP '(?<=userPWD=")[^"]*' | head -1)
 
-        # Clean up
-        rm publish-profile.xml
+        # Mask the actual values in logs
+        echo "::add-mask::$USERNAME"
+        echo "::add-mask::$PASSWORD"
+
+        # Set outputs
+        echo "username=$USERNAME" >> $GITHUB_OUTPUT
+        echo "password=$PASSWORD" >> $GITHUB_OUTPUT
+
+    - name: Create Deployment Package
+      working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/publish
+      run: |
+        zip -r ../deploy.zip .
+
+    - name: Deploy to Azure Functions via ZipDeploy
+      working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
+      run: |
+        curl -X POST \
+          -u "${{ steps.extract-creds.outputs.username }}:${{ steps.extract-creds.outputs.password }}" \
+          --data-binary @deploy.zip \
+          -H "Content-Type: application/zip" \
+          "https://${{ env.AZURE_FUNCTIONAPP_NAME }}.scm.azurewebsites.net/api/zipdeploy"
 
     - name: Verify Deployment
       run: |
+        echo "Waiting for deployment to complete..."
+        sleep 30
         echo "Checking health endpoint..."
         curl -f https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/diagnostics/health || echo "Health check failed (functions may still be syncing)"
 
