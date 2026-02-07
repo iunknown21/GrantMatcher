@@ -29,6 +29,21 @@ az functionapp config appsettings list --name func-grantmatcher-dev --resource-g
 
 **Important:** No OpenAI key needed! EntityMatching API (https://entityaiapi.azurewebsites.net) handles all embedding generation.
 
+### Deployment Status ✅
+**Last Deployed:** 2026-02-07
+**Status:** All functions successfully deployed and operational
+
+**Available Endpoints (25+ functions):**
+- Grant Management: `/api/grants` (GET, POST), `/api/grants/{id}` (GET)
+- Profile Management: `/api/profiles` (POST), `/api/profiles/{id}` (GET, PUT, DELETE)
+- Matching: `/api/matches/search`
+- Conversation: `/api/conversation`
+- Analytics: `/api/analytics/*` (track, query, report, realtime, top grants, cohorts, funnel)
+- Admin: `/api/admin/grants/import`
+- Diagnostics: `/api/diagnostics/*` (health, cache-stats, clear-cache, warmup-cache, performance-stats)
+
+**Health Check:** https://func-grantmatcher-dev.azurewebsites.net/api/diagnostics/health
+
 ---
 
 ## 🔧 Integration Architecture
