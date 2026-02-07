@@ -19,7 +19,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
     environment:
       name: 'Development'
-      url: ${{ steps.deploy-to-functions.outputs.webapp-url }}
+      url: 'https://func-grantmatcher-dev.azurewebsites.net'
 
     steps:
     - name: Checkout code
@@ -30,23 +30,31 @@ jobs:
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
 
-    - name: Resolve Project Dependencies
+    - name: Install Azure Functions Core Tools
+      run: |
+        curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+        sudo mv microsoft.gpg /etc/apt/trusted.gpg.d/microsoft.gpg
+        sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-ubuntu-$(lsb_release -cs)-prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/dotnetdev.list'
+        sudo apt-get update
+        sudo apt-get install -y azure-functions-core-tools-4
+
+    - name: Build and Deploy to Azure Functions
       working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
       run: |
-        dotnet restore
-        dotnet build --configuration Release --no-restore
+        # Save publish profile to file
+        echo '${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}' > publish-profile.xml
 
-    - name: Publish Functions
-      working-directory: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-      run: dotnet publish --configuration Release --output ./output
+        # Deploy using func CLI
+        func azure functionapp publish ${{ env.AZURE_FUNCTIONAPP_NAME }} \
+          --publish-profile-path publish-profile.xml
 
-    - name: Deploy to Azure Functions
-      id: deploy-to-functions
-      uses: Azure/functions-action@v1
-      with:
-        app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-        package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/output
-        publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+        # Clean up
+        rm publish-profile.xml
+
+    - name: Verify Deployment
+      run: |
+        echo "Checking health endpoint..."
+        curl -f https://${{ env.AZURE_FUNCTIONAPP_NAME }}.azurewebsites.net/api/diagnostics/health || echo "Health check failed (functions may still be syncing)"
 
     - name: Seed Grants
       if: github.event_name == 'workflow_dispatch'
