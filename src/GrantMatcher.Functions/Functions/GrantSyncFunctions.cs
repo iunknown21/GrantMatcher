@@ -2,6 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Azure.Cosmos;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using GrantMatcher.Core.Interfaces;
 using GrantMatcher.Shared.Models;
@@ -25,18 +26,19 @@ public class GrantSyncFunctions
     public GrantSyncFunctions(
         ILogger<GrantSyncFunctions> logger,
         IOpportunityDataService grantsService,
-        IGroqService? groqService,
-        IOpenAIService? openAIService,
         IEntityMatchingService entityMatchingService,
         CosmosClient cosmosClient,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IServiceProvider serviceProvider)
     {
         _logger = logger;
         _grantsService = grantsService;
-        _groqService = groqService;
-        _openAIService = openAIService;
         _entityMatchingService = entityMatchingService;
         _cosmosClient = cosmosClient;
+
+        // Try to get optional services
+        _groqService = serviceProvider.GetService<IGroqService>();
+        _openAIService = serviceProvider.GetService<IOpenAIService>();
 
         var databaseName = configuration["CosmosDb:DatabaseName"] ?? "GrantMatcherDb";
         _grantsContainer = _cosmosClient.GetContainer(databaseName, "Grants");

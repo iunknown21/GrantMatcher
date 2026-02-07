@@ -69,11 +69,7 @@ if (!string.IsNullOrEmpty(openAIApiKey))
         return new OpenAIService(client, openAIApiKey, embeddingModel, chatModel);
     });
 }
-else
-{
-    // Provide a null implementation if OpenAI is not configured
-    builder.Services.AddScoped<IOpenAIService>(sp => null!);
-}
+// If OpenAI is not configured, don't register it (constructor will receive null)
 
 // SimplerGrants Service (for federal grant opportunities)
 var simplerGrantsBaseUrl = configuration["SimplerGrants:BaseUrl"] ?? "https://api.simpler.grants.gov/v1";
@@ -104,11 +100,7 @@ if (!string.IsNullOrEmpty(groqApiKey))
         return new GroqService(client, groqApiKey, logger);
     });
 }
-else
-{
-    // Provide null implementation if Groq is not configured
-    builder.Services.AddScoped<IGroqService>(sp => null!);
-}
+// If Groq is not configured, don't register it (constructor will receive null)
 
 // Caching Services
 builder.Services.AddMemoryCache();
