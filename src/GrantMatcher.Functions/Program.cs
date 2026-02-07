@@ -93,6 +93,23 @@ builder.Services.AddHttpClient<IOpportunityDataService, SimplerGrantsService>((s
     return new SimplerGrantsService(client, logger, simplerGrantsBaseUrl);
 });
 
+// Groq AI Service (for fast grant summary generation)
+var groqApiKey = configuration["Groq:ApiKey"];
+if (!string.IsNullOrEmpty(groqApiKey))
+{
+    builder.Services.AddHttpClient<IGroqService, GroqService>()
+    .AddTypedClient<IGroqService>((client, sp) =>
+    {
+        var logger = sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<GroqService>>();
+        return new GroqService(client, groqApiKey, logger);
+    });
+}
+else
+{
+    // Provide null implementation if Groq is not configured
+    builder.Services.AddScoped<IGroqService>(sp => null!);
+}
+
 // Caching Services
 builder.Services.AddMemoryCache();
 

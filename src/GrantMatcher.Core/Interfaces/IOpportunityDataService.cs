@@ -26,4 +26,14 @@ public interface IOpportunityDataService
     /// Get grants by agency
     /// </summary>
     Task<List<GrantEntity>> GetGrantsByAgencyAsync(string agencyCode, int limit = 25, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetch all active grants (for seeding)
+    /// </summary>
+    Task<List<GrantEntity>> GetAllActiveGrantsAsync(int maxResults = 1000, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetch grants modified since a specific date (for daily sync)
+    /// </summary>
+    Task<List<GrantEntity>> GetRecentlyModifiedGrantsAsync(DateTime since, CancellationToken cancellationToken = default);
 }
