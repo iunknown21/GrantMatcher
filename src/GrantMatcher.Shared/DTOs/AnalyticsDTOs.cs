@@ -150,7 +150,20 @@ public class TopGrants
 {
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public List<TopGrantItem> Grants { get; set; } = new();
+    public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
+    public List<GrantRanking> MostViewed { get; set; } = new();
+    public List<GrantRanking> MostSaved { get; set; } = new();
+    public List<GrantRanking> HighestClickThrough { get; set; } = new();
+    public List<GrantRanking> Trending { get; set; } = new();
+}
+
+public class GrantRanking
+{
+    public Guid GrantId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int Rank { get; set; }
+    public int Count { get; set; }
+    public double Score { get; set; }
 }
 
 public class TopGrantItem
