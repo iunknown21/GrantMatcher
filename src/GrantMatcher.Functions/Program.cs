@@ -41,9 +41,9 @@ builder.Services.AddSingleton<CosmosClient>(sp =>
 });
 
 // HTTP Clients and Services
-var entityMatchingApiKey = configuration["EntityMatchingAI:ApiKey"]
-    ?? throw new InvalidOperationException("EntityMatchingAI:ApiKey is required");
-var entityMatchingBaseUrl = configuration["EntityMatchingAI:BaseUrl"] ?? "https://profilematching-apim.azure-api.net/api/v1";
+var entityMatchingApiKey = configuration["EntityMatchingApi:ApiKey"]
+    ?? throw new InvalidOperationException("EntityMatchingApi:ApiKey is required");
+var entityMatchingBaseUrl = configuration["EntityMatchingApi:BaseUrl"] ?? "https://entityaiapi.azurewebsites.net";
 
 builder.Services.AddHttpClient<IEntityMatchingService, EntityMatchingService>((sp, client) =>
 {
@@ -55,16 +55,25 @@ builder.Services.AddHttpClient<IEntityMatchingService, EntityMatchingService>((s
     return new EntityMatchingService(client, entityMatchingApiKey);
 });
 
-var openAIApiKey = configuration["OpenAI:ApiKey"]
-    ?? throw new InvalidOperationException("OpenAI:ApiKey is required");
+// OpenAI is optional - only needed if you want to generate embeddings locally
+// EntityMatching API can also handle embedding generation
+var openAIApiKey = configuration["OpenAI:ApiKey"];
 var embeddingModel = configuration["OpenAI:EmbeddingModel"] ?? "text-embedding-3-small";
 var chatModel = configuration["OpenAI:ChatModel"] ?? "gpt-4o-mini";
 
-builder.Services.AddHttpClient<IOpenAIService, OpenAIService>()
-.AddTypedClient<IOpenAIService>((client, sp) =>
+if (!string.IsNullOrEmpty(openAIApiKey))
 {
-    return new OpenAIService(client, openAIApiKey, embeddingModel, chatModel);
-});
+    builder.Services.AddHttpClient<IOpenAIService, OpenAIService>()
+    .AddTypedClient<IOpenAIService>((client, sp) =>
+    {
+        return new OpenAIService(client, openAIApiKey, embeddingModel, chatModel);
+    });
+}
+else
+{
+    // Provide a null implementation if OpenAI is not configured
+    builder.Services.AddScoped<IOpenAIService>(sp => null!);
+}
 
 // SimplerGrants Service (for federal grant opportunities)
 var simplerGrantsBaseUrl = configuration["SimplerGrants:BaseUrl"] ?? "https://api.simpler.grants.gov/v1";
