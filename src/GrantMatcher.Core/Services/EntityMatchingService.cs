@@ -235,37 +235,40 @@ Be conversational and encouraging. Ask follow-up questions to get specific detai
             // Simple mapping - in production, you'd want more sophisticated parsing
             switch (category)
             {
-                case "academic":
-                    if (insightText.Contains("major", StringComparison.OrdinalIgnoreCase))
-                        data.Major = insightText;
-                    if (insightText.Contains("GPA", StringComparison.OrdinalIgnoreCase))
+                case "organization":
+                case "nonprofit":
+                    if (insightText.Contains("mission", StringComparison.OrdinalIgnoreCase))
+                        data.MissionStatement = insightText;
+                    if (insightText.Contains("EIN", StringComparison.OrdinalIgnoreCase))
+                        data.EIN = insightText;
+                    if (insightText.Contains("type", StringComparison.OrdinalIgnoreCase))
+                        data.OrganizationType = insightText;
+                    break;
+
+                case "service":
+                case "area":
+                    if (data.ServiceAreas == null)
+                        data.ServiceAreas = new List<string>();
+                    data.ServiceAreas.Add(insightText);
+                    break;
+
+                case "funding":
+                case "category":
+                    if (data.FundingCategories == null)
+                        data.FundingCategories = new List<string>();
+                    data.FundingCategories.Add(insightText);
+                    break;
+
+                case "budget":
+                case "financial":
+                    // Try to extract budget amount
+                    var budgetMatch = System.Text.RegularExpressions.Regex.Match(insightText, @"\$?[\d,]+");
+                    if (budgetMatch.Success)
                     {
-                        // Try to extract GPA number
-                        var gpaMatch = System.Text.RegularExpressions.Regex.Match(insightText, @"\d\.\d+");
-                        if (gpaMatch.Success && double.TryParse(gpaMatch.Value, out var gpa))
-                            data.GPA = (decimal)gpa;
+                        var budgetStr = budgetMatch.Value.Replace("$", "").Replace(",", "");
+                        if (decimal.TryParse(budgetStr, out var budget))
+                            data.AnnualBudget = budget;
                     }
-                    break;
-
-                case "hobby":
-                case "activity":
-                    if (data.ExtracurricularActivities == null)
-                        data.ExtracurricularActivities = new List<string>();
-                    data.ExtracurricularActivities.Add(insightText);
-                    break;
-
-                case "preference":
-                case "interest":
-                    if (data.Interests == null)
-                        data.Interests = new List<string>();
-                    data.Interests.Add(insightText);
-                    break;
-
-                case "career":
-                case "goal":
-                    if (data.CareerGoals == null)
-                        data.CareerGoals = new List<string>();
-                    data.CareerGoals.Add(insightText);
                     break;
             }
         }
