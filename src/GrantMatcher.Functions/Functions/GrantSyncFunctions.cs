@@ -50,7 +50,7 @@ public class GrantSyncFunctions
     /// </summary>
     [Function("SeedGrants")]
     public async Task<HttpResponseData> SeedGrants(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "admin/grants/seed")] HttpRequestData req,
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "management/grants/seed")] HttpRequestData req,
         FunctionContext executionContext)
     {
         var stopwatch = Stopwatch.StartNew();
