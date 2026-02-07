@@ -85,9 +85,11 @@ az functionapp config appsettings set \
 **Via HTTP Request:**
 ```bash
 curl -X POST \
-  https://func-grantmatcher-dev.azurewebsites.net/api/admin/grants/seed \
+  https://func-grantmatcher-dev.azurewebsites.net/api/management/grants/seed \
   -H "x-functions-key: <YOUR_FUNCTION_KEY>"
 ```
+
+**Note:** Route uses `/management/` not `/admin/` (admin is reserved by Azure Kudu).
 
 **Expected Response:**
 ```json
