@@ -151,12 +151,20 @@ public class SimplerGrantsService : IOpportunityDataService
     /// </summary>
     private GrantEntity MapToGrantEntity(SimplerGrantsOpportunity opportunity)
     {
+        // Provide default description if missing (search API doesn't return full description)
+        var description = opportunity.Summary?.Description;
+        if (string.IsNullOrWhiteSpace(description))
+        {
+            description = $"Grant opportunity from {opportunity.Agency?.Name ?? "Federal Agency"}. " +
+                         $"For more details, visit Grants.gov opportunity {opportunity.OpportunityNumber}.";
+        }
+
         return new GrantEntity
         {
-            Id = Guid.NewGuid(),
+            id = Guid.NewGuid().ToString(),
             Name = opportunity.OpportunityTitle,
             OpportunityNumber = opportunity.OpportunityNumber,
-            Description = opportunity.Summary?.Description ?? string.Empty,
+            Description = description,
 
             // Agency
             Agency = opportunity.Agency?.Name ?? string.Empty,
@@ -266,24 +274,29 @@ public class SimplerGrantsService : IOpportunityDataService
     }
 
     /// <summary>
-    /// Fetches all active grants from Simpler.Grants.gov with pagination
+    /// Fetches all active grants from Grants.gov with pagination
+    /// Traditional Grants.gov API uses: https://apply07.grants.gov/grantsws/rest/opportunities/search/
     /// </summary>
     public async Task<List<GrantEntity>> GetAllActiveGrantsAsync(
         int maxResults = 1000,
         CancellationToken cancellationToken = default)
     {
         var allGrants = new List<GrantEntity>();
-        int pageSize = 100; // API limit per request
-        int offset = 0;
+        int pageSize = 25; // Grants.gov API actual limit per page
+        int offset = 1; // Grants.gov uses 1-based indexing
 
         try
         {
             while (allGrants.Count < maxResults)
             {
-                var url = $"{_baseUrl}/opportunities?status=posted&limit={pageSize}&offset={offset}";
-                _logger.LogInformation("Fetching grants page: offset={Offset}, limit={Limit}", offset, pageSize);
+                // Traditional Grants.gov API format: POST to /opportunities/search/ with query params
+                // eligibilities=12,13 filters for 501(c)(3) and other nonprofits
+                // sortBy=closeDate sorts by newest opportunities first (to avoid old stale grants)
+                var url = $"{_baseUrl}/opportunities/search/?oppStatuses=posted&eligibilities=12,13&rows={pageSize}&startRecordNum={offset}&sortBy=closeDate|desc";
+                _logger.LogInformation("Fetching grants page for nonprofits: startRecordNum={Offset}, rows={Limit}", offset, pageSize);
 
-                var response = await _httpClient.GetAsync(url, cancellationToken);
+                // Grants.gov API requires POST, not GET
+                var response = await _httpClient.PostAsync(url, null, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -310,7 +323,7 @@ public class SimplerGrantsService : IOpportunityDataService
                     break;
                 }
 
-                offset += pageSize;
+                offset += pageSize; // Move to next page
 
                 // Rate limiting: small delay between requests
                 await Task.Delay(500, cancellationToken);

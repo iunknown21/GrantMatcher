@@ -280,7 +280,7 @@ Be conversational and encouraging. Ask follow-up questions to get specific detai
     {
         var attributes = new Dictionary<string, object>
         {
-            { "grantId", Grant.Id.ToString() },
+            { "grantId", Grant.id },
             { "opportunityNumber", Grant.OpportunityNumber },
             { "agency", Grant.Agency },
             { "agencyCode", Grant.AgencyCode },

@@ -31,19 +31,14 @@ var databaseName = configuration["CosmosDb:DatabaseName"] ?? "GrantMatcher";
 
 builder.Services.AddSingleton<CosmosClient>(sp =>
 {
-    return new CosmosClient(cosmosConnectionString, new CosmosClientOptions
-    {
-        SerializerOptions = new CosmosSerializationOptions
-        {
-            PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-        }
-    });
+    // Note: Not using CamelCase serialization because container partition key is /Agency (not /agency)
+    return new CosmosClient(cosmosConnectionString);
 });
 
 // HTTP Clients and Services
-var entityMatchingApiKey = configuration["EntityMatchingApi:ApiKey"]
-    ?? throw new InvalidOperationException("EntityMatchingApi:ApiKey is required");
-var entityMatchingBaseUrl = configuration["EntityMatchingApi:BaseUrl"] ?? "https://entityaiapi.azurewebsites.net";
+var entityMatchingApiKey = configuration["EntityMatchingAI:ApiKey"]
+    ?? throw new InvalidOperationException("EntityMatchingAI:ApiKey is required");
+var entityMatchingBaseUrl = configuration["EntityMatchingAI:BaseUrl"] ?? "https://entityaiapi.azurewebsites.net";
 
 builder.Services.AddHttpClient<IEntityMatchingService, EntityMatchingService>((sp, client) =>
 {
@@ -72,7 +67,7 @@ if (!string.IsNullOrEmpty(openAIApiKey))
 // If OpenAI is not configured, don't register it (constructor will receive null)
 
 // SimplerGrants Service (for federal grant opportunities)
-var simplerGrantsBaseUrl = configuration["SimplerGrants:BaseUrl"] ?? "https://api.simpler.grants.gov/v1";
+var simplerGrantsBaseUrl = configuration["SimplerGrants:BaseUrl"] ?? "https://apply07.grants.gov/grantsws/rest";
 var simplerGrantsApiKey = configuration["SimplerGrants:ApiKey"];
 
 builder.Services.AddHttpClient<IOpportunityDataService, SimplerGrantsService>((sp, client) =>

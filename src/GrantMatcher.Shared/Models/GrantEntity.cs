@@ -1,8 +1,11 @@
+using System.Text.Json.Serialization;
+
 namespace GrantMatcher.Shared.Models;
 
 public class GrantEntity
 {
-    public Guid Id { get; set; }
+    // Cosmos DB requires "id" field as lowercase string
+    public string id { get; set; } = Guid.NewGuid().ToString();
     public string Name { get; set; } = string.Empty;  // Opportunity Title
     public string OpportunityNumber { get; set; } = string.Empty;  // Unique federal grant number
     public string Description { get; set; } = string.Empty;  // Full description
@@ -51,4 +54,7 @@ public class GrantEntity
 
     // Entity matching
     public string? EntityId { get; set; }  // ID in EntityMatchingAI system
+
+    // Cosmos DB Time-to-Live (in seconds, -1 = never expire, null = use container default)
+    public int? ttl { get; set; }  // Lowercase to match Cosmos DB convention
 }

@@ -36,9 +36,9 @@ public static class AppConstants
 
     public static class SimplerGrants
     {
-        public const string BaseUrl = "https://api.simpler.grants.gov/v1";
-        public const string AttributionText = "Federal grant data provided by Simpler.Grants.gov";
+        public const string BaseUrl = "https://apply07.grants.gov/grantsws/rest";
+        public const string AttributionText = "Federal grant data provided by Grants.gov";
         public const string WebsiteUrl = "https://www.grants.gov";
-        public const string DeveloperUrl = "https://simpler.grants.gov/developer";
+        public const string DeveloperUrl = "https://www.grants.gov/web/grants/support.html";
     }
 }

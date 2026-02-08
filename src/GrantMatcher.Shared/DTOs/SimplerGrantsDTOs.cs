@@ -1,18 +1,84 @@
+using System.Text.Json.Serialization;
+
 namespace GrantMatcher.Shared.DTOs;
 
 /// <summary>
-/// Response from Simpler.Grants.gov API search endpoint
+/// Response from Traditional Grants.gov API search endpoint
+/// https://apply07.grants.gov/grantsws/rest/opportunities/search/
 /// </summary>
 public class SimplerGrantsResponse
 {
-    public int Total { get; set; }
-    public int Limit { get; set; }
-    public int Offset { get; set; }
-    public List<SimplerGrantsOpportunity> Data { get; set; } = new();
+    [JsonPropertyName("hitCount")]
+    public int HitCount { get; set; }
+
+    [JsonPropertyName("startRecord")]
+    public int StartRecord { get; set; }
+
+    [JsonPropertyName("oppHits")]
+    public List<GrantsGovOpportunityHit> OppHits { get; set; } = new();
+
+    // For backwards compatibility with our code that expects "Data"
+    [JsonIgnore]
+    public List<SimplerGrantsOpportunity> Data => OppHits.Select(hit => new SimplerGrantsOpportunity
+    {
+        OpportunityId = hit.Id,
+        OpportunityNumber = hit.Number,
+        OpportunityTitle = hit.Title,
+        OpportunityStatus = hit.OppStatus,
+        Agency = new SimplerGrantsAgency
+        {
+            Code = hit.AgencyCode,
+            Name = hit.Agency
+        },
+        PostDate = hit.OpenDate,
+        CloseDate = hit.CloseDate,
+        AssistanceListing = new SimplerGrantsAssistanceListing
+        {
+            CFDANumber = hit.CfdaList?.FirstOrDefault()
+        }
+    }).ToList();
 }
 
 /// <summary>
-/// Individual grant opportunity from Simpler.Grants.gov
+/// Individual opportunity hit from Grants.gov search results (minimal data)
+/// To get full details, use the opportunity detail endpoint
+/// </summary>
+public class GrantsGovOpportunityHit
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("number")]
+    public string Number { get; set; } = string.Empty;
+
+    [JsonPropertyName("title")]
+    public string Title { get; set; } = string.Empty;
+
+    [JsonPropertyName("agencyCode")]
+    public string AgencyCode { get; set; } = string.Empty;
+
+    [JsonPropertyName("agency")]
+    public string Agency { get; set; } = string.Empty;
+
+    [JsonPropertyName("openDate")]
+    public string? OpenDate { get; set; }
+
+    [JsonPropertyName("closeDate")]
+    public string? CloseDate { get; set; }
+
+    [JsonPropertyName("oppStatus")]
+    public string OppStatus { get; set; } = string.Empty;
+
+    [JsonPropertyName("docType")]
+    public string? DocType { get; set; }
+
+    [JsonPropertyName("cfdaList")]
+    public List<string>? CfdaList { get; set; }
+}
+
+/// <summary>
+/// Full grant opportunity details from Simpler.Grants.gov or Grants.gov detail endpoint
+/// This is used for mapping to our GrantEntity model
 /// </summary>
 public class SimplerGrantsOpportunity
 {

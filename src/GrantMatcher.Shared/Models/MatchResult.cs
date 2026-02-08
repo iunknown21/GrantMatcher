@@ -2,7 +2,7 @@ namespace GrantMatcher.Shared.Models;
 
 public class MatchResult
 {
-    public Guid GrantId { get; set; }
+    public string GrantId { get; set; } = string.Empty;
     public GrantEntity Grant { get; set; } = null!;
 
     // Matching scores

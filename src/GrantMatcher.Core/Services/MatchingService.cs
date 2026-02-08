@@ -219,7 +219,7 @@ public class MatchingService : IMatchingService
 
         return new MatchResult
         {
-            GrantId = Grant.Id,
+            GrantId = Grant.id,
             Grant = Grant,
             SemanticSimilarity = semanticSimilarity,
             CompositeScore = compositeScore,
@@ -320,7 +320,7 @@ public class MatchingService : IMatchingService
 
         var Grant = new GrantEntity
         {
-            Id = Guid.Parse(entity.Attributes.GetValueOrDefault("grantId")?.ToString() ?? Guid.NewGuid().ToString()),
+            id = entity.Attributes.GetValueOrDefault("grantId")?.ToString() ?? Guid.NewGuid().ToString(),
             Name = entity.Name,
             Description = entity.Description ?? string.Empty,
             NaturalLanguageSummary = entity.Description ?? string.Empty,

@@ -60,34 +60,32 @@ public class GrantSyncFunctions
 
         try
         {
-            // Fetch all active grants
-            _logger.LogInformation("Fetching grants from Simpler.Grants.gov...");
+            // Fetch all active grants (already filtered for nonprofits by API eligibilities=12,13)
+            _logger.LogInformation("Fetching nonprofit-eligible grants from Grants.gov...");
             var grants = await _grantsService.GetAllActiveGrantsAsync(maxResults: 1000);
             stats.TotalFetched = grants.Count;
-            _logger.LogInformation("Fetched {Count} grants from API", grants.Count);
-
-            // Filter for nonprofits
-            var nonprofitGrants = grants.Where(g =>
-                g.ApplicantTypes.Any(t =>
-                    t.Contains("Nonprofit", StringComparison.OrdinalIgnoreCase) ||
-                    t.Contains("501(c)(3)", StringComparison.OrdinalIgnoreCase) ||
-                    t.Contains("501c3", StringComparison.OrdinalIgnoreCase))
-            ).ToList();
-
-            stats.TotalFiltered = nonprofitGrants.Count;
-            _logger.LogInformation("Filtered to {Count} grants eligible for nonprofits", nonprofitGrants.Count);
+            stats.TotalFiltered = grants.Count; // API already filtered for nonprofits
+            _logger.LogInformation("Fetched {Count} nonprofit-eligible grants from API", grants.Count);
 
             // Process each grant
-            foreach (var grant in nonprofitGrants)
+            foreach (var grant in grants)
             {
                 try
                 {
+                    // Skip very old grants that might have data quality issues
+                    if (grant.PostDate.HasValue && grant.PostDate.Value.Year < 2020)
+                    {
+                        _logger.LogInformation("Skipping old grant {OpportunityNumber} from {Year}",
+                            grant.OpportunityNumber, grant.PostDate.Value.Year);
+                        continue;
+                    }
+
                     await ProcessGrantAsync(grant, isUpdate: false);
                     stats.Successful++;
 
                     if (stats.Successful % 10 == 0)
                     {
-                        _logger.LogInformation("Progress: {Success}/{Total} grants processed", stats.Successful, nonprofitGrants.Count);
+                        _logger.LogInformation("Progress: {Success}/{Total} grants processed", stats.Successful, grants.Count);
                     }
                 }
                 catch (Exception ex)
@@ -263,47 +261,25 @@ public class GrantSyncFunctions
             grant.CreatedAt = DateTime.UtcNow;
         }
 
-        var itemWithTtl = new
+        // Set TTL (time-to-live in seconds)
+        grant.ttl = _ttlDays * 24 * 60 * 60; // Convert days to seconds
+
+        try
         {
-            grant.Id,
-            grant.Name,
-            grant.OpportunityNumber,
-            grant.Description,
-            grant.Agency,
-            grant.SubAgency,
-            grant.AgencyCode,
-            grant.ApplicantTypes,
-            grant.FundingCategories,
-            grant.EligibleStates,
-            grant.EligibleCounties,
-            grant.AwardCeiling,
-            grant.AwardFloor,
-            grant.EstimatedTotalFunding,
-            grant.ExpectedNumberOfAwards,
-            grant.FundingInstrument,
-            grant.CostSharing,
-            grant.PostDate,
-            grant.CloseDate,
-            grant.ArchiveDate,
-            grant.ApplicationUrl,
-            grant.GrantsGovUrl,
-            grant.RequiredDocuments,
-            grant.CFDANumber,
-            grant.FundingActivity,
-            grant.IsForecasted,
-            grant.Version,
-            grant.NaturalLanguageSummary,
-            grant.Keywords,
-            grant.CreatedAt,
-            grant.LastUpdated,
-            grant.EntityId,
-            ttl = _ttlDays * 24 * 60 * 60 // Convert days to seconds
-        };
+            _logger.LogInformation("Attempting to store grant {OpportunityNumber} with Agency={Agency}, TTL={TTL}",
+                grant.OpportunityNumber, grant.Agency, grant.ttl);
 
-        await _grantsContainer.UpsertItemAsync(itemWithTtl, new PartitionKey(grant.Agency));
+            await _grantsContainer.UpsertItemAsync(grant, new PartitionKey(grant.Agency));
 
-        _logger.LogInformation("Stored grant {OpportunityNumber} in Cosmos DB with {TTL} day TTL",
-            grant.OpportunityNumber, _ttlDays);
+            _logger.LogInformation("Successfully stored grant {OpportunityNumber} in Cosmos DB with {TTL} day TTL",
+                grant.OpportunityNumber, _ttlDays);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to store grant in Cosmos DB. OpportunityNumber={OpportunityNumber}, Agency={Agency}, HasDescription={HasDesc}, DescriptionLength={DescLen}",
+                grant.OpportunityNumber, grant.Agency, !string.IsNullOrEmpty(grant.Description), grant.Description?.Length ?? 0);
+            throw;
+        }
     }
 
     /// <summary>
@@ -338,7 +314,7 @@ public class GrantSyncFunctions
         existing.Version = updated.Version;
         existing.LastUpdated = DateTime.UtcNow;
 
-        await _grantsContainer.ReplaceItemAsync(existing, existing.Id.ToString(), new PartitionKey(existing.Agency));
+        await _grantsContainer.ReplaceItemAsync(existing, existing.id, new PartitionKey(existing.Agency));
 
         _logger.LogInformation("Updated metadata for {OpportunityNumber}", existing.OpportunityNumber);
     }

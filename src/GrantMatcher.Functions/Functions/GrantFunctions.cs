@@ -53,7 +53,7 @@ public class GrantFunctions
                 return badRequest;
             }
 
-            Grant.Id = Guid.NewGuid();
+            Grant.id = Guid.NewGuid().ToString();
             Grant.CreatedAt = DateTime.UtcNow;
 
             // Store in Cosmos DB
@@ -71,7 +71,7 @@ public class GrantFunctions
             await _entityMatchingService.UploadEmbeddingAsync(entityId, embedding);
 
             // Update with EntityId
-            await _container.ReplaceItemAsync(Grant, Grant.Id.ToString(), new PartitionKey(Grant.Agency));
+            await _container.ReplaceItemAsync(Grant, Grant.id, new PartitionKey(Grant.Agency));
 
             var httpResponse = req.CreateResponse(HttpStatusCode.Created);
             await httpResponse.WriteAsJsonAsync(Grant);
@@ -184,7 +184,7 @@ public class GrantFunctions
             {
                 try
                 {
-                    Grant.Id = Guid.NewGuid();
+                    Grant.id = Guid.NewGuid().ToString();
                     Grant.CreatedAt = DateTime.UtcNow;
 
                     // Store in Cosmos DB
@@ -199,7 +199,7 @@ public class GrantFunctions
                     await _entityMatchingService.UploadEmbeddingAsync(entityId, embedding);
 
                     // Update with EntityId
-                    await _container.ReplaceItemAsync(Grant, Grant.Id.ToString(), new PartitionKey(Grant.Agency));
+                    await _container.ReplaceItemAsync(Grant, Grant.id, new PartitionKey(Grant.Agency));
 
                     imported++;
                 }
